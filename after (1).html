@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تحدي الروبوتات الذكي 🤖</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6c5ce7;
+            --secondary: #a29bfe;
+            --success: #00b894;
+            --danger: #d63031;
+            --bg: #dfe6e9;
+        }
+
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: var(--bg);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: #2d3436;
+        }
+
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 25px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            width: 90%;
+            max-width: 500px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        h1 { color: var(--primary); font-weight: 900; margin-bottom: 10px; }
+        
+        .hidden { display: none; }
+
+        input {
+            padding: 15px;
+            width: 80%;
+            border: 3px solid var(--secondary);
+            border-radius: 15px;
+            font-size: 18px;
+            margin: 20px 0;
+            text-align: center;
+            outline: none;
+        }
+
+        .btn-main {
+            padding: 15px 40px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 15px;
+            font-size: 20px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.3s transform;
+        }
+
+        .btn-main:hover { transform: scale(1.05); }
+
+        .question-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .options {
+            display: grid;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .option-card {
+            padding: 15px;
+            border: 2px solid #eee;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 18px;
+            transition: 0.2s;
+            background: #f9f9f9;
+        }
+
+        .option-card:hover {
+            border-color: var(--primary);
+            background: #f0f0ff;
+        }
+
+        .progress-container {
+            height: 12px;
+            background: #eee;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        #progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--secondary), var(--primary));
+            border-radius: 10px;
+            width: 0%;
+            transition: 0.5s;
+        }
+
+        .result-icon { font-size: 80px; margin-bottom: 20px; }
+
+        .badge {
+            background: var(--primary);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div id="start-screen">
+        <div style="font-size: 60px;">🤖</div>
+        <h1>مغامرة الروبوتات</h1>
+        <p>مستعد للتحدي يا بطل؟ أدخل اسمك:</p>
+        <input type="text" id="user-name" placeholder="مثلاً: أحمد">
+        <br>
+        <button class="btn-main" onclick="init()">انطلاق! 🚀</button>
+    </div>
+
+    <div id="quiz-screen" class="hidden">
+        <div class="question-info">
+            <span class="badge" id="counter">السؤال: 1/10</span>
+            <span id="timer">⏱️ استعد</span>
+        </div>
+        <div class="progress-container"><div id="progress-bar"></div></div>
+        <h2 id="q-text" style="min-height: 80px;"></h2>
+        <div class="options" id="options"></div>
+    </div>
+
+    <div id="result-screen" class="hidden">
+        <div class="result-icon" id="res-icon">🏆</div>
+        <h2>كفو يا <span id="res-name"></span>!</h2>
+        <h3 id="score-text"></h3>
+        <p>لإعادة الاختبار، أدخل الرمز السري (123):</p>
+        <input type="password" id="reset-code" style="width: 100px;">
+        <br>
+        <button class="btn-main" onclick="checkReset()">إعادة المحاولة 🔄</button>
+    </div>
+</div>
+
+<script>
+   const quizData = [
+    { q: "الروبوت آلة تجمع البيانات ثم تعالجها لتتخذ..؟", a: ["قراراً صائباً", "صوراً تذكارية", "إجازة سعيدة"], c: 0 },
+    { q: "الروبوتات التي تُثبت في مكان واحد تسمى..؟", a: ["روبوتات طائرة", "روبوتات ثابتة", "روبوتات خجولة"], c: 1 },
+    { q: "أي نوع من الروبوتات نستخدمه لتنظيف أرضية المنزل؟", a: ["روبوت متنقل", "روبوت عملاق", "روبوت ثابت"], c: 0 },
+    { q: "في المصانع، الروبوت الثابت يساعدنا بشكل كبير في..؟", a: ["أكل الطعام", "صناعة السيارات", "النوم العميق"], c: 1 },
+    { q: "الخطوة الأولى والأساسية في عمل الروبوت هي..؟", a: ["التنفيذ", "الاستشعار", "المعالجة"], c: 1 },
+    { q: "الروبوتات المتنقلة تعتمد في حركتها بشكل أساسي على..؟", a: ["المحركات", "المغناطيس فقط", "البطاريات فقط"], c: 0 },
+    { q: "هل الروبوت أسرع من الإنسان في المهام المتكررة بالمصانع؟", a: ["نعم، وبدقة مذهلة", "لا، الإنسان أسرع", "أحياناً فقط"], c: 0 },
+    { q: "يستخدم الأطباء الروبوت في المستشفيات للقيام بـ..؟", a: ["لعب الغميضة", "العمليات الجراحية", "تقديم العصير"], c: 1 },
+    { q: "من أهم مزايا الروبوت أنه يستطيع العمل لـ..؟", a: ["فترات طويلة جداً", "عشر دقائق فقط", "وقت الفسحة فقط"], c: 0 },
+    { q: "يعتبر البعض أن الروبوتات مكلفة لأن ثمنها..؟", a: ["رخيص جداً", "عالي (غالي)", "مجاني للجميع"], c: 1 },
+    { q: "الروبوتات في التعليم تساعد الطلاب على تعلم..؟", a: ["البرمجة والتفكير", "الركض السريع", "النوم في الحصة"], c: 0 },
+    { q: "مجال يستخدم الروبوت لمراقبة المحاصيل والري الدقيق هو..؟", a: ["الفضاء", "الزراعة", "الرياضة"], c: 1 },
+    { q: "من عيوب الروبوت أنه لا يستطيع القيام بمهن تتطلب..؟", a: ["سرعة", "إبداعاً وتفكيراً", "كهرباء"], c: 1 },
+    { q: "بماذا يتميز الروبوت الثابت عن المتنقل في المصنع؟", a: ["أنه أقوى وأسرع", "أنه يحب اللعب", "أنه يتحرك دائماً"], c: 0 },
+    { q: "تحتاج الروبوتات لكي تستمر في العمل إلى مصدر..؟", a: ["طاقة (بطارية)", "هواء نقي", "ماء بارد"], c: 0 },
+    { q: "في عام 2025م، نجح مستشفى سلطاني في عُمان بإجراء أول..؟", a: ["سباق روبوتات", "عملية جراحية بالروبوت", "مصنع روبوتات"], c: 1 },
+    { q: "يُستخدم الروبوت في المخازن (المستودعات) من أجل..؟", a: ["ترتيب البضائع", "قراءة القصص", "النوم على الرفوف"], c: 0 },
+    { q: "عندما يعالج الروبوت البيانات، فإنه يقوم بـ..؟", a: ["فهم ما استشعره", "مسح الذاكرة", "التوقف عن العمل"], c: 0 },
+    { q: "الروبوتات مبرمجة للقيام بأشياء محددة، لذا فهي..؟", a: ["لا تقرر بنفسها", "تغير رأيها دائماً", "تنام كثيراً"], c: 0 },
+    { q: "الهدف الأساسي من استخدام الروبوتات هو..؟", a: ["تسهيل حياة الناس", "إخافة الناس", "استبدال الألعاب"], c: 0 }
+];
+
+    let current = 0;
+    let score = 0;
+    let studentName = "";
+
+    function init() {
+        studentName = document.getElementById('user-name').value;
+        if (!studentName) return alert("أدخل اسمك يا بطل!");
+        document.getElementById('start-screen').classList.add('hidden');
+        document.getElementById('quiz-screen').classList.remove('hidden');
+        loadQ();
+    }
+
+    function loadQ() {
+        const data = quizData[current];
+        document.getElementById('counter').innerText = `السؤال: ${current + 1} / ${quizData.length}`;
+        document.getElementById('q-text').innerText = `يا ${studentName}، ${data.q}`;
+        document.getElementById('progress-bar').style.width = `${((current)/quizData.length)*100}%`;
+        
+        const optionsDiv = document.getElementById('options');
+        optionsDiv.innerHTML = "";
+        data.a.forEach((opt, idx) => {
+            const div = document.createElement('div');
+            div.className = 'option-card';
+            div.innerText = opt;
+            div.onclick = () => select(idx);
+            optionsDiv.appendChild(div);
+        });
+    }
+
+    function select(idx) {
+        if (idx === quizData[current].c) score++;
+        current++;
+        if (current < quizData.length) {
+            loadQ();
+        } else {
+            finish();
+        }
+    }
+
+    function finish() {
+        document.getElementById('quiz-screen').classList.add('hidden');
+        document.getElementById('result-screen').classList.remove('hidden');
+        document.getElementById('res-name').innerText = studentName;
+        document.getElementById('score-text').innerText = `نتيجتك هي: ${score} من ${quizData.length}`;
+        
+        const icon = document.getElementById('res-icon');
+        if (score > 7) { icon.innerText = "🏆"; }
+        else if (score > 4) { icon.innerText = "🌟"; }
+        else { icon.innerText = "💪"; }
+    }
+
+    function checkReset() {
+        const code = document.getElementById('reset-code').value;
+        if (code === "123") {
+            location.reload();
+        } else {
+            alert("عذراً، الرمز السري غير صحيح!");
+        }
+    }
+</script>
+</body>
+</html>
